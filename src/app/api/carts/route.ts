@@ -27,7 +27,7 @@ export async function GET(request: Request) {
     );
   }
 
-  let vtexUrl = `https://b2csinsa.vtexcommercestable.com.br/api/dataentities/CL/search?_fields=firstName,lastName,email,homePhone,rclastcart,createdIn&_sort=createdIn DESC`;
+  let vtexUrl = `https://b2csinsa.vtexcommercestable.com.br/api/dataentities/CL/search?_fields=firstName,lastName,email,homePhone,rclastcart,createdIn,checkouttag,updatedIn&_sort=createdIn DESC`;
   
   let whereClauses = [];
   if (startDate && endDate) {
@@ -89,6 +89,8 @@ export async function GET(request: Request) {
     let withCarts = Array.isArray(data) 
       ? data.filter(client => {
           if (!client.rclastcart || client.rclastcart.trim() === '') return false;
+          
+          if (client.checkouttag?.DisplayValue === 'Finalizado') return false;
           
           // Filtrar excluidos
           if (client.email && excludedEmails.includes(client.email.toLowerCase().trim())) return false;
