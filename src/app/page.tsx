@@ -9,8 +9,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { AbandonedCartClient, ApiResponse } from '@/types/cart';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+
+const CHECKOUT_STEPS: Record<string, { label: string, color: string }> = {
+  Carrinho: { label: 'Carrito', color: 'bg-slate-100 text-slate-700 border-slate-200' },
+  DadosPessoais: { label: 'Datos Personales', color: 'bg-sky-100 text-sky-700 border-sky-200' },
+  Endereco: { label: 'Dirección', color: 'bg-indigo-100 text-indigo-700 border-indigo-200' },
+  FormaPagamento: { label: 'Pago', color: 'bg-amber-100 text-amber-700 border-amber-200' },
+  Finalizado: { label: 'Finalizado', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
+};
+
 
 function DashboardContent() {
   const router = useRouter();
@@ -89,7 +98,7 @@ function DashboardContent() {
   const exportToCSV = () => {
     if (clients.length === 0) return;
     
-    const headers = ['Cliente', 'Email', 'Teléfono', 'Fecha Creación'];
+    const headers = ['Cliente', 'Email', 'Teléfono', 'Fecha Creación', 'Última Actualización', 'Paso Abandono'];
     const csvRows = [headers.join(',')];
 
     clients.forEach(client => {
@@ -97,7 +106,10 @@ function DashboardContent() {
       const email = `"${client.email || ''}"`;
       const phone = `"${client.homePhone || ''}"`;
       const date = `"${client.createdIn ? format(new Date(client.createdIn), "dd MMM yyyy HH:mm", { locale: es }) : ''}"`;
-      csvRows.push([name, email, phone, date].join(','));
+      const updatedStr = client.updatedIn || client.createdIn;
+      const updated = `"${updatedStr ? formatDistanceToNow(new Date(updatedStr), { addSuffix: true, locale: es }) : ''}"`;
+      const step = `"${client.checkouttag?.DisplayValue || ''}"`;
+      csvRows.push([name, email, phone, date, updated, step].join(','));
     });
 
     const csvData = csvRows.join('\n');
@@ -243,7 +255,7 @@ function DashboardContent() {
                     <TableRow>
                       <TableHead className="w-[250px]">Cliente</TableHead>
                       <TableHead>Contacto</TableHead>
-                      <TableHead>Fecha Creación</TableHead>
+                      <TableHead>Última Actualización</TableHead>
                       <TableHead className="text-right">Acción</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -278,9 +290,25 @@ function DashboardContent() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div className="text-sm text-slate-700">
-                            {client.createdIn ? format(new Date(client.createdIn), "dd MMM yyyy, HH:mm", { locale: es }) : 'N/A'}
+                          <div className="text-sm text-slate-900 font-medium capitalize">
+                            {client.updatedIn || client.createdIn 
+                              ? formatDistanceToNow(new Date(client.updatedIn || client.createdIn!), { addSuffix: true, locale: es }) 
+                              : 'N/A'}
                           </div>
+                          <div className="text-xs text-slate-500 mt-1">
+                            Creado: {client.createdIn ? format(new Date(client.createdIn), "dd MMM yyyy, HH:mm", { locale: es }) : 'N/A'}
+                          </div>
+                          {client.checkouttag?.DisplayValue && (() => {
+                            const stepInfo = CHECKOUT_STEPS[client.checkouttag.DisplayValue] || { 
+                              label: client.checkouttag.DisplayValue, 
+                              color: 'bg-slate-100 text-slate-600 border-slate-200' 
+                            };
+                            return (
+                              <Badge variant="outline" className={`mt-1.5 text-[10px] font-medium border ${stepInfo.color}`}>
+                                {stepInfo.label}
+                              </Badge>
+                            );
+                          })()}
                         </TableCell>
                         <TableCell className="text-right">
                           <Link href={`/carts/${encodeURIComponent(client.email || 'unknown')}`}>

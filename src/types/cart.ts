@@ -6,6 +6,11 @@ export interface AbandonedCartClient {
   homePhone: string;
   rclastcart: string;
   createdIn?: string;
+  updatedIn?: string;
+  checkouttag?: {
+    DisplayValue?: string;
+    Scores?: any;
+  } | null;
   parsedCartItems?: any[] | null;
   parsedCartJson?: any | null;
   cartType?: 'url_params' | 'json' | 'raw';
